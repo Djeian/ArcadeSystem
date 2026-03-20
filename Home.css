@@ -134,6 +134,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            text-align: center;
             font-size:7px;
             color:#ffcc00;
             opacity:0.8;
