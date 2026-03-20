@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skill Issue Arcade - Memory Game</title>
+<link rel="icon" type="image/png" href="Logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="MemoryFlip.css">
+</head>
+
+<body>
+
+<button id="backBtn" class="back-btn">BACK</button>
+
+<img src="MenuButton.png" id="pauseBtn" class="pause-btn">
+
+<div class="top-ui">
+    <div class="ui-box">LEVEL<br><span id="levelText">1</span></div>
+    <div class="ui-box">TIME<br><span id="timerText">30</span></div>
+    <button id="nextBtn">NEXT</button>
+</div>
+
+<div class="form-wrapper">
+    <div class="instruction-panel">
+        <b>HOW TO PLAY</b><br><br>
+
+        • Flip 2 cards at a time<br>
+        • Match all pairs to win<br>
+        • Cards flip back if wrong<br><br>
+
+        <b>GOAL</b><br><br>
+
+        • Complete 5 levels<br>
+        • Each level adds more pairs<br>
+        • Beat the timer to win<br><br>
+
+        <b>TIPS</b><br><br>
+
+        • Memorize card positions<br>
+        • Be fast but accurate<br>
+    </div>
+
+    <div class="form-panel" id="formPanel">
+        <input type="text" placeholder="FIRST NAME" id="fname">
+        <input type="text" placeholder="LAST NAME" id="lname">
+        <input type="text" placeholder="NUMBER (optional)" id="number">
+
+        <select id="type">
+            <option value="">ARE YOU STUDENT?</option>
+            <option value="yes">YES</option>
+            <option value="no">NO</option>
+        </select>
+
+        <select id="grade" style="display:none;">
+            <option value="">GRADE LEVEL</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="COLLEGE">COLLEGE</option>
+        </select>
+
+        <select id="strand" style="display:none;">
+            <option value="">STRAND/TRACK</option>
+        </select>
+
+        <img src="Start.png" id="startBtn" class="start-img">
+    </div>
+
+</div>
+
+
+<div class="pause-overlay" id="pauseOverlay">
+    <div class="pause-panel">
+        <div class="pause-buttons">
+            <img src="Restart.png" id="restartGameBtn" class="pause-btn-img">
+            <img src="HomeButton.png" id="restartBtn" class="pause-btn-img">
+            <img src="Settings2.png" id="exitBtn" class="pause-btn-img">
+        </div>
+        <img src="Continue.png" id="continueBtn" class="continue-btn">
+    </div>
+</div>
+
+
+<div class="result-overlay" id="resultOverlay">
+    <div class="result-panel" id="resultPanel">
+
+        <div class="result-info">
+            <div id="resultTitle">YOU WIN</div><br>
+            <div>TIME: <span id="finalTime"></span>s</div>
+            <div>LEVEL: <span id="finalLevel"></span></div>
+        </div>
+
+        <div class="result-buttons">
+            <img src="Restart.png" id="resultRestart" class="result-btn-img">
+            <img src="HomeButton.png" id="resultHome" class="result-btn-img">
+            <img src="Settings2.png" id="resultSettings" class="result-btn-img">
+        </div>
+
+    </div>
+</div>
+
+<div class="game-board" id="gameBoard"></div>
+<div class="copyright">
+    © 2026 Skill Issue Arcade. All Rights Reserved.
+</div>
+<script>
+const gameBoard = document.getElementById('gameBoard');
+const levelText = document.getElementById('levelText');
+const timerText = document.getElementById('timerText');
+const startBtn = document.getElementById('startBtn');
+const nextBtn = document.getElementById('nextBtn');
+const formPanel = document.getElementById('formPanel');
+
+const pauseBtn = document.getElementById('pauseBtn');
+const pauseOverlay = document.getElementById('pauseOverlay');
+const restartGameBtn = document.getElementById('restartGameBtn');
+const restartBtn = document.getElementById('restartBtn');
+const exitBtn = document.getElementById('exitBtn');
+const continueBtn = document.getElementById('continueBtn');
+
+const backBtn = document.getElementById('backBtn');
+
+const resultOverlay = document.getElementById('resultOverlay');
+const resultPanel = document.getElementById('resultPanel');
+const resultTitle = document.getElementById('resultTitle');
+const finalTime = document.getElementById('finalTime');
+const finalLevel = document.getElementById('finalLevel');
+
+const resultRestart = document.getElementById('resultRestart');
+const resultHome = document.getElementById('resultHome');
+const resultSettings = document.getElementById('resultSettings');
+const formWrapper = document.querySelector(".form-wrapper");
+
+let level=1, pairs=2, timeLeft=30, timer;
+let firstCard=null, secondCard=null, lockBoard=false, matches=0;
+let isPaused=false;
+let startTime=0;
+let pausedTimeAccum=0; 
+let pauseStart=0;   
+
+
+function toggleBackButton(){
+    backBtn.style.display = formPanel.style.display === "flex" || formPanel.style.display === "" ? "block" : "none";
+}
+
+backBtn.onclick = ()=> window.location.href = "Home.html";
+
+const typeSelect = document.getElementById("type");
+const gradeSelect = document.getElementById("grade");
+const strandSelect = document.getElementById("strand");
+
+typeSelect.addEventListener("change", () => {
+    if (typeSelect.value === "yes") {
+        gradeSelect.style.display = "block";
+        strandSelect.style.display = "block";
+        strandSelect.innerHTML = '<option value="">STRAND/TRACK</option>'; // reset
+    } else {
+        gradeSelect.style.display = "none";
+        strandSelect.style.display = "none";
+        gradeSelect.value = "";
+        strandSelect.value = "";
+    }
+});
+
+gradeSelect.addEventListener("change", () => {
+    const grade = gradeSelect.value;
+    let options = '<option value="">STRAND/TRACK</option>';
+
+    if (grade === "11" || grade === "12") {
+        options += '<option value="ABM">ABM</option>';
+        options += '<option value="MAWD">MAWD</option>';
+        options += '<option value="DIGAR">DIGAR</option>';
+        options += '<option value="STEM">STEM</option>';
+        options += '<option value="CUART">CUART</option>';
+    } else if (grade === "COLLEGE") {
+        options += '<option value="BSIT">BSIT</option>';
+        options += '<option value="BSCpE">BSCpE</option>';
+        options += '<option value="BSBA">BSBA</option>';
+        options += '<option value="BSAIS">BSAIS</option>';
+        options += '<option value="BSA">BSA</option>';
+        options += '<option value="BSCM">BSCM</option>';
+        options += '<option value="BSTM">BSTM</option>';
+        options += '<option value="HRS">HRS</option>';
+    }
+
+    strandSelect.innerHTML = options;
+});
+
+
+startBtn.onclick = () => {
+    const fname = document.getElementById("fname").value.trim();
+    const lname = document.getElementById("lname").value.trim();
+    const type = typeSelect.value;
+    const grade = gradeSelect.value;
+    const strand = strandSelect.value;
+
+    if (!fname || !lname || !type) {
+        alert("Please fill all required fields!");
+        return;
+    }
+
+    if (type === "yes" && (!grade || !strand)) {
+        alert("Please select grade level and strand/track!");
+        return;
+    }
+
+    formWrapper.style.display = "none"; 
+    toggleBackButton();
+    pauseBtn.style.display = "block";
+    startTime = Date.now();
+    pausedTimeAccum = 0;
+    startRound();
+};
+
+toggleBackButton();
+
+pauseBtn.onclick = ()=> {
+    if(isPaused) return;
+    isPaused = true;
+    pauseStart = Date.now();
+    clearInterval(timer);
+    pauseOverlay.style.display = "flex";
+};
+
+continueBtn.onclick = ()=> {
+    if(!isPaused) return;
+    isPaused = false;
+    pausedTimeAccum += Date.now() - pauseStart;
+    pauseOverlay.style.display = "none";
+    startTimer();
+};
+
+restartGameBtn.onclick = ()=> resetGame();
+restartBtn.onclick = ()=> window.location.href="Home.html";
+exitBtn.onclick = ()=> alert("Settings soon");
+
+resultRestart.onclick = ()=> resetGame();
+resultHome.onclick = ()=> window.location.href="Home.html";
+resultSettings.onclick = ()=> alert("Settings soon");
+
+nextBtn.onclick = ()=>{ nextBtn.style.display="none"; startRound(); };
+
+function startRound(){
+    generateBoard();
+    startTimer();
+}
+
+function generateBoard() {
+    gameBoard.innerHTML = "";
+    matches = 0;
+
+    let total = pairs * 2;
+    let cols = Math.ceil(Math.sqrt(total));
+    let rows = Math.ceil(total / cols);
+
+    gameBoard.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    gameBoard.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+    
+    const backImages = [
+        'Pair1.png', 
+        'Pair2.png', 
+        'Pair3.png', 
+        'Pair4.png', 
+        'Pair5.png', 
+    ];
+
+    let arr = [];
+    for (let i = 0; i < pairs; i++) {
+        arr.push({ id: i, backImg: backImages[i] });
+        arr.push({ id: i, backImg: backImages[i] });
+    }
+
+    arr.sort(() => 0.5 - Math.random());
+
+    arr.forEach(data => {
+        const card = document.createElement('div');
+        card.className = "card";
+        card.dataset.id = data.id;
+
+        const inner = document.createElement('div');
+        inner.className = "card-inner";
+
+        inner.innerHTML = `
+            <div class="card-front"><img src="BackCard.png"></div>
+            <div class="card-back"><img src="${data.backImg}"></div>
+        `;
+
+        card.appendChild(inner);
+        gameBoard.appendChild(card);
+
+        card.onclick = () => {
+            if (lockBoard || card === firstCard || card.classList.contains("flipped") || isPaused) return;
+
+            card.classList.add("flipped");
+
+            if (!firstCard) {
+                firstCard = card;
+                return;
+            }
+
+            secondCard = card;
+            lockBoard = true;
+
+            if (firstCard.dataset.id === secondCard.dataset.id) {
+                matches++;
+                resetTurn();
+
+                if (matches === pairs) {
+                    if (level === 5) {
+                        showResult("YOU WIN");
+                        return;
+                    }
+
+                    clearInterval(timer);
+                    nextBtn.style.display = "block";
+                    level++;
+                    pairs++;
+                    timeLeft += 25;
+                    updateUI();
+                }
+            } else {
+                setTimeout(() => {
+                    firstCard.classList.remove("flipped");
+                    secondCard.classList.remove("flipped");
+                    resetTurn();
+                }, 800);
+            }
+        };
+    });
+}
+
+function resetTurn(){ firstCard=null; secondCard=null; lockBoard=false; }
+
+function startTimer(){
+    clearInterval(timer);
+    timer = setInterval(()=>{
+        if(!isPaused){
+            timeLeft--;
+            timerText.innerText = timeLeft;
+
+            if(timeLeft <= 0){
+                clearInterval(timer);
+                showResult("YOU LOSE");
+            }
+        }
+    },1000);
+}
+
+function showResult(text){
+    const totalTime = Math.floor((Date.now()-startTime - pausedTimeAccum)/1000); // subtract paused duration
+    resultTitle.innerText = text;
+    finalTime.innerText = totalTime;
+    finalLevel.innerText = level;
+
+    if(text === "YOU WIN"){
+        resultPanel.style.background = "url('WinBackground.png') center/contain no-repeat";
+    } else {
+        resultPanel.style.background = "url('LoseBackground.png') center/contain no-repeat";
+    }
+
+    resultOverlay.style.display="flex";
+}
+
+function resetGame(){
+    // Hide overlays
+    resultOverlay.style.display="none";
+    pauseOverlay.style.display="none"; 
+    nextBtn.style.display="none"; 
+
+    // Reset game state
+    level = 1;
+    pairs = 2;
+    timeLeft = 30;
+
+    // Reset pause variables
+    isPaused = false;
+    pauseStart = 0;
+    pausedTimeAccum = 0;
+
+    // Reset card tracking
+    firstCard = null;
+    secondCard = null;
+    lockBoard = false;
+    matches = 0;
+
+    // Reset UI
+    updateUI();
+    formWrapper.style.display = "flex";
+    toggleBackButton(); 
+    gameBoard.innerHTML = "";
+
+    clearInterval(timer);
+}
+function updateUI(){
+    levelText.innerText=level;
+    timerText.innerText=timeLeft;
+}
+</script>
+
+</body>
+</html>

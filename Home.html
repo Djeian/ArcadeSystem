@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Issue Arcade - Home</title>
+    <link rel="stylesheet" href="Home.css">
+    <link rel="icon" type="image/png" href="Logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+    <img src="MenuButton.png" alt="Menu" class="menu-button" id="menuButton">
+    <div class="image-container">
+        <a href="MemoryFlip.html">
+            <img src="LoadingBackground.png" alt="Game 1" class="clickable-img game1">
+        </a>
+        <a href="Wordle.html">
+            <img src="LoadingBackground.png" alt="Game 2" class="clickable-img game2">
+        </a>
+        <a href="page3.html">
+            <img src="LoadingBackground.png" alt="Game 3" class="clickable-img game3">
+        </a>
+    </div>
+    <div class="overlay" id="overlay"><button class="back-btn" onclick="closeMenu()">BACK</button></div>
+
+<div class="menu-popup" id="menuPopup">
+    <img src="MenuPic.png" class="menu-title">
+
+    <img src="Start.png" class="menu-img" onclick="alert('Start Game')">
+    <img src="About.png" class="menu-img" onclick="alert('Settings')">
+    <img src="Settings.png" class="menu-img" onclick="closeMenu()">
+</div>
+<div class="copyright">
+    © 2026 Skill Issue Arcade. All Rights Reserved.
+</div>
+    <script>
+    const menuButton = document.getElementById('menuButton');
+    const menuPopup = document.getElementById('menuPopup');
+    const overlay = document.getElementById('overlay');
+
+    menuButton.addEventListener('click', () => {
+        menuPopup.style.display = 'flex';
+        overlay.style.display = 'block';
+    });
+
+    function closeMenu() {
+        menuPopup.style.display = 'none';
+        overlay.style.display = 'none';
+    }
+
+    overlay.addEventListener('click', closeMenu);
+</script>
+</body>
+</html>

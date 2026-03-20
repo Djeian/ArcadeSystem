@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skill Issue Arcade - Wordle</title>
+<link rel="icon" type="image/png" href="Logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="Wordle.css">
+</head>
+
+<body>
+
+
+<button id="backBtn" class="back-btn">BACK</button>
+<button id="nextBtn">NEXT</button>
+<img src="MenuButton.png" id="pauseBtn">
+
+<div class="top-ui">
+    <div class="ui-box">WORD GUESS<br><span id="levelText">1</span></div>
+    <div class="ui-box">TIME<br><span id="timerText">60</span></div>
+</div>
+
+<div class="form-wrapper">
+
+    <div class="instruction-panel">
+        <b>HOW TO PLAY</b><br><br>
+
+        • Guess the 5-letter word.<br>
+        • You have 6 tries per level.<br>
+        • Each level has 60 seconds.<br><br>
+
+        <b>COLORS</b><br><br>
+
+        🟩 GREEN = Correct letter, correct place<br>
+        🟨 YELLOW = Correct letter, wrong place<br>
+        ⬛ GRAY = Not in the word<br><br>
+
+        <b>GOAL</b><br><br>
+
+        • Complete all 5 levels<br>
+        • Each correct word unlocks NEXT<br>
+        • Finish all to WIN<br>
+    </div>
+
+    <div class="form-panel" id="formPanel">
+        <input type="text" placeholder="FIRST NAME" id="fname">
+        <input type="text" placeholder="LAST NAME" id="lname">
+        <input type="text" placeholder="NUMBER (optional)" id="number">
+
+        <select id="type">
+            <option value="">ARE YOU STUDENT?</option>
+            <option value="yes">YES</option>
+            <option value="no">NO</option>
+        </select>
+
+        <select id="grade" style="display:none;">
+            <option value="">GRADE LEVEL</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="COLLEGE">COLLEGE</option>
+        </select>
+
+        <select id="strand" style="display:none;">
+            <option value="">STRAND/TRACK</option>
+        </select>
+
+        <img src="Start.png" id="startBtn" class="start-img">
+    </div>
+
+</div>
+
+<div class="pause-overlay" id="pauseOverlay">
+    <div class="pause-panel">
+        <div class="pause-buttons">
+            <img src="Restart.png" id="restartGameBtn" class="pause-btn-img">
+            <img src="HomeButton.png" id="restartBtn" class="pause-btn-img">
+            <img src="Settings2.png" id="exitBtn" class="pause-btn-img">
+        </div>
+        <img src="Continue.png" id="continueBtn" class="continue-btn">
+    </div>
+</div>
+
+<div class="result-overlay" id="resultOverlay">
+    <div class="result-panel" id="resultPanel">
+        <div class="result-info">
+            <div id="resultTitle">YOU WIN</div><br>
+            <div>WORD: <span id="finalWord"></span></div>
+        </div>
+        <div class="result-buttons">
+            <img src="Restart.png" id="resultRestart" class="result-btn-img">
+            <img src="HomeButton.png" id="resultHome" class="result-btn-img">
+            <img src="Settings2.png" id="resultSettings" class="result-btn-img">
+        </div>
+    </div>
+</div>
+
+<div class="board" id="board"></div>
+<div class="copyright">
+    © 2026 Skill Issue Arcade. All Rights Reserved.
+</div>
+<script>
+const formPanel = document.getElementById("formPanel");
+const startBtn = document.getElementById("startBtn");
+const backBtn = document.getElementById("backBtn");
+const typeSelect = document.getElementById("type");
+const gradeSelect = document.getElementById("grade");
+const strandSelect = document.getElementById("strand");
+
+const pauseBtn = document.getElementById("pauseBtn");
+const pauseOverlay = document.getElementById("pauseOverlay");
+const continueBtn = document.getElementById("continueBtn");
+const restartGameBtn = document.getElementById("restartGameBtn");
+const restartBtn = document.getElementById("restartBtn");
+const exitBtn = document.getElementById("exitBtn");
+
+const resultOverlay = document.getElementById("resultOverlay");
+const resultPanel = document.getElementById("resultPanel");
+const resultTitle = document.getElementById("resultTitle");
+const finalWord = document.getElementById("finalWord");
+const resultRestart = document.getElementById("resultRestart");
+const resultHome = document.getElementById("resultHome");
+const resultSettings = document.getElementById("resultSettings");
+
+const board = document.getElementById("board");
+const timerText = document.getElementById("timerText");
+const levelText = document.getElementById("levelText");
+const nextBtn = document.getElementById("nextBtn");
+const formWrapper = document.querySelector(".form-wrapper");
+
+let secretWord="", currentRow=0, currentGuess="";
+let isPaused=false, timer, timeLeft=60, startTime=0, pausedTimeAccum=0, pauseStart=0;
+let level=1, maxLevel=5;
+let levelCompleted=false;
+
+backBtn.onclick = ()=> window.location.href="Home.html";
+
+nextBtn.onclick = ()=>{
+    if(level >= maxLevel){
+        nextBtn.style.display="none";
+        showResult("YOU WIN", secretWord); 
+        return;
+    }
+    level++;
+    levelText.innerText = level;
+    nextBtn.style.display="none";
+    levelCompleted = false;
+    resetBoard();
+    startGame();
+};
+
+// FORM dynamic
+typeSelect.addEventListener("change", () => {
+    if(typeSelect.value==="yes"){
+        gradeSelect.style.display="block";
+        strandSelect.style.display="block";
+        strandSelect.innerHTML='<option value="">STRAND/TRACK</option>';
+    } else {
+        gradeSelect.style.display="none";
+        strandSelect.style.display="none";
+        gradeSelect.value="";
+        strandSelect.value="";
+    }
+});
+
+gradeSelect.addEventListener("change", () => {
+    const grade = gradeSelect.value;
+    let options='<option value="">STRAND/TRACK</option>';
+    if(grade==="11" || grade==="12"){
+        options+='<option value="ABM">ABM</option><option value="MAWD">MAWD</option><option value="DIGAR">DIGAR</option><option value="STEM">STEM</option><option value="CUART">CUART</option>';
+    } else if(grade==="COLLEGE"){
+        options+='<option value="BSIT">BSIT</option><option value="BSCpE">BSCpE</option><option value="BSBA">BSBA</option><option value="BSAIS">BSAIS</option><option value="BSA">BSA</option><option value="BSCM">BSCM</option><option value="BSTM">BSTM</option><option value="HRS">HRS</option>';
+    }
+    strandSelect.innerHTML=options;
+});
+
+const words = [
+    {word:"MANGO", category:"Fruit", hint:"Sweet tropical fruit popular in the Philippines"},
+    {word:"JEANS", category:"Clothing", hint:"Denim pants everyone wears"},
+    {word:"APPLE", category:"Fruit", hint:"Common fruit, also a famous tech brand"},
+    {word:"TRAIN", category:"Transport", hint:"Runs on tracks"},
+    {word:"BAYAN", category:"Geography", hint:"Filipino term for town or community"},
+    {word:"BIBLE", category:"Religion", hint:"Holy book read by many people"},
+    {word:"PIXEL", category:"Technology", hint:"Smallest unit of a digital image"},
+    {word:"EMBER", category:"Nature", hint:"Glowing remnant of fire"},
+    {word:"LYRIC", category:"Music", hint:"Words of a song"},
+    {word:"PLANE", category:"Transport", hint:"Flies in the sky"},
+    {word:"LIGHT", category:"Physics", hint:"Can brighten a room"},
+    {word:"STONE", category:"Nature", hint:"Hard solid material found in earth"},
+    {word:"BRICK", category:"Building", hint:"Used to make walls"},
+    {word:"SWEET", category:"Taste", hint:"Sugary flavor"},
+    {word:"COINS", category:"Money", hint:"Metal currency used in transactions"},
+    {word:"WATER", category:"Nature", hint:"Essential for life"},
+    {word:"SHOES", category:"Clothing", hint:"Worn on feet"},
+    {word:"RIZAL", category:"Culture", hint:"Famous Filipino national hero"},
+    {word:"MUSIC", category:"Entertainment", hint:"Art of organized sound"},
+    {word:"CANDY", category:"Food", hint:"Sweet treat for kids"}
+];
+
+//START
+startBtn.onclick = () => {
+    const fname=document.getElementById("fname").value.trim();
+    const lname=document.getElementById("lname").value.trim();
+    const type=typeSelect.value;
+    const grade=gradeSelect.value;
+    const strand=strandSelect.value;
+
+    if(!fname || !lname || !type){ alert("Fill required fields!"); return; }
+    if(type==="yes" && (!grade || !strand)){ alert("Select grade and strand!"); return; }
+
+    formWrapper.style.display="none";
+    backBtn.style.display="none";
+    pauseBtn.style.display="block";
+    startTime = Date.now();
+    pausedTimeAccum = 0;
+    timeLeft = 60;
+
+    startGame();
+};
+
+//PAUSE
+pauseBtn.onclick = ()=> {
+    if(isPaused) return;
+    isPaused = true;
+    pauseStart = Date.now();
+    clearInterval(timer);
+    pauseOverlay.style.display="flex";
+};
+
+continueBtn.onclick = ()=> {
+    if(!isPaused) return;
+    isPaused = false;
+    pausedTimeAccum += Date.now()-pauseStart;
+    pauseOverlay.style.display="none";
+    if(!levelCompleted) startTimer();
+};
+
+restartGameBtn.onclick = ()=> location.reload();
+restartBtn.onclick = ()=> window.location.href="Home.html";
+exitBtn.onclick = ()=> alert("Settings coming soon!");
+
+//WORDLE GAME FUNCTIONS
+document.addEventListener("keydown", e=>{
+    if(!secretWord || currentRow>=6 || isPaused) return;
+    if(e.key==="Enter"){
+        if(currentGuess.length!==5) return;
+        checkWord();
+        return;
+    }
+    if(e.key==="Backspace"){
+        currentGuess=currentGuess.slice(0,-1);
+        updateTiles();
+        return;
+    }
+    if(/^[a-zA-Z]$/.test(e.key) && currentGuess.length<5){
+        currentGuess+=e.key.toUpperCase();
+        updateTiles();
+    }
+});
+
+function startGame(){
+    resetBoard();
+
+    const secret = words[Math.floor(Math.random()*words.length)];
+    secretWord = secret.word;
+
+    const catDiv = document.getElementById("category");
+    if(catDiv) catDiv.remove();
+    const catNew = document.createElement("div");
+    catNew.id="category"; catNew.style.color="#ffcc00"; catNew.style.margin="10px";
+    catNew.textContent = "Category: " + secret.category;
+    document.body.insertBefore(catNew, board);
+
+    const hintDiv = document.getElementById("hint");
+    if(hintDiv) hintDiv.remove();
+    const hintNew = document.createElement("div");
+    hintNew.id="hint"; hintNew.style.color="#b59f3b"; hintNew.style.margin="10px";
+    hintNew.textContent = "Hint: " + secret.hint;
+    document.body.insertBefore(hintNew, board);
+
+    for(let r=0;r<6;r++){
+        const row = document.createElement("div");
+        row.className="row";
+        for(let c=0;c<5;c++){
+            const tile = document.createElement("div");
+            tile.className="tile";
+            row.appendChild(tile);
+        }
+        board.appendChild(row);
+    }
+
+    currentRow=0;
+    currentGuess="";
+    timeLeft=60;
+    levelCompleted=false;
+    startTimer();
+}
+
+function startTimer(){
+    clearInterval(timer);
+    timerText.innerText = timeLeft;
+    timer = setInterval(()=>{
+        if(!isPaused && !levelCompleted){
+            timeLeft--;
+            timerText.innerText = timeLeft;
+            if(timeLeft <= 0){
+                clearInterval(timer);
+                levelCompleted = true;
+                showResult("YOU LOSE", secretWord);
+            }
+        }
+    }, 1000);
+}
+
+function updateTiles(){
+    const row = board.children[currentRow];
+    for(let i=0; i<5; i++){
+        row.children[i].textContent = currentGuess[i] || "";
+    }
+}
+
+let correctWordsCount = 0;
+
+function checkWord(){
+    const row = board.children[currentRow];
+    for(let i=0; i<5; i++){
+        const tile = row.children[i];
+        const letter = currentGuess[i];
+        if(letter === secretWord[i]){
+            tile.classList.add("green");
+        } else if(secretWord.includes(letter)){
+            tile.classList.add("yellow");
+        } else {
+            tile.classList.add("gray");
+        }
+    }
+
+    if(currentGuess === secretWord){
+        levelCompleted = true;
+        clearInterval(timer);
+        correctWordsCount++; 
+
+        if(level < maxLevel){
+            nextBtn.style.display = "block"; 
+        } else {
+            showResult("YOU WIN", correctWordsCount, true);
+        }
+        return;
+    }
+
+    currentRow++;
+    currentGuess="";
+    if(currentRow === 6){
+        levelCompleted = true;
+        clearInterval(timer);
+        showResult("YOU LOSE", secretWord, false);
+    }
+}
+
+nextBtn.onclick = ()=>{
+    if(level >= maxLevel){
+        nextBtn.style.display="none";
+        showResult("YOU WIN", correctWordsCount, true); 
+        return;
+    }
+    level++;
+    levelText.innerText = level;
+    nextBtn.style.display="none";
+    levelCompleted = false;
+    resetBoard();
+    startGame();
+};
+
+//RESULT
+function showResult(text, data, isWin){
+    resultTitle.innerText = text;
+    if(isWin){
+        finalWord.previousSibling.textContent = "GUESS WORDS: ";
+        finalWord.innerText = data;
+    } else {
+        finalWord.previousSibling.textContent = "WORD: ";
+        finalWord.innerText = data;
+    }
+    resultOverlay.style.display = "flex";
+}
+
+//RESET
+function resetBoard(){
+    board.innerHTML = "";
+    const catDiv = document.getElementById("category");
+    if(catDiv) catDiv.remove();
+    const hintDiv = document.getElementById("hint");
+    if(hintDiv) hintDiv.remove();
+    resultOverlay.style.display = "none";
+    currentRow = 0;
+    currentGuess = "";
+}
+
+
+resultRestart.onclick = ()=> location.reload();
+resultHome.onclick = ()=> window.location.href="Home.html";
+resultSettings.onclick = ()=> alert("Settings coming soon!");
+</script>
+
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skill Issue Arcade - Loading</title>
+<link rel="stylesheet" href="Loading.css">
+<link rel="icon" type="image/png" href="Logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="loading-bg" id="bg">
+
+    <div class="tap-text" id="tap">
+        TAP ANYTHING TO CONTINUE
+    </div>
+
+    <div class="loading-screen" id="loading">
+
+    <div class="loading-container">
+
+        <div class="pixel-bar">
+
+            <div class="pixel-fill"></div>
+
+        </div>
+
+        <p class="loading-text">
+            LOADING<span class="dots"></span>
+        </p>
+
+    </div>
+</div>
+<div class="copyright">
+    © 2026 Skill Issue Arcade. All Rights Reserved.
+</div>
+<script>
+
+const tap = document.getElementById("tap");
+const loading = document.getElementById("loading");
+
+document.body.addEventListener("click", () => {
+
+    tap.style.display = "none";
+    loading.style.display = "flex";
+
+});
+document.body.addEventListener("click", () => {
+
+tap.style.display = "none";
+loading.style.display = "flex";
+
+setTimeout(() => {
+
+window.location.href = "Home.html";
+
+},4000);
+
+});
+</script>
+
+</body>
+</html>
